@@ -19,11 +19,25 @@ func NewAuthHandler() *AuthHandler {
 	}
 }
 
+// LoginRequest represents the user login credentials
+type LoginRequest struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+// Login godoc
+// @Summary User Login
+// @Description Authenticates a user and returns a token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login credentials"
+// @Success 200 {object} utils.APIResponse
+// @Failure 400 {object} utils.APIResponse
+// @Failure 401 {object} utils.APIResponse
+// @Router /api/v1/auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
-	var input struct {
-		Username string `json:"username" binding:"required"`
-		Password string `json:"password" binding:"required"`
-	}
+	var input LoginRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		utils.JSONResponse(c, http.StatusBadRequest, "Invalid input data", nil)

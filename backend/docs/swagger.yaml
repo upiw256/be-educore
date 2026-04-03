@@ -1,0 +1,309 @@
+basePath: /
+definitions:
+  handler.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  model.IzinSiswa:
+    properties:
+      className:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      nis:
+        type: string
+      reason:
+        type: string
+      recorded_by:
+        type: string
+      time:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.LateRecord:
+    properties:
+      academic_year:
+        type: string
+      arrival_time:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      nipd:
+        type: string
+      reason:
+        type: string
+      recorded_by:
+        type: string
+      semester:
+        type: integer
+      student_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.Pelanggaran:
+    properties:
+      created_at:
+        type: string
+      date:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      nis:
+        type: string
+      poin:
+        type: integer
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  utils.APIResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+host: localhost:8082
+info:
+  contact: {}
+  description: This is the schools management EduCore API.
+  title: EduCore API
+  version: "1.0"
+paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns a token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: User Login
+      tags:
+      - Auth
+  /api/v1/izins:
+    get:
+      description: Retrieves all student excuse/absence records
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get all Izin records
+      tags:
+      - Records
+    post:
+      consumes:
+      - application/json
+      description: Record a student's excuse (Izin)
+      parameters:
+      - description: Izin details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.IzinSiswa'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Create an Izin record
+      tags:
+      - Records
+  /api/v1/late-records:
+    get:
+      description: Retrieves all student tardiness records
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get all Late records
+      tags:
+      - Records
+    post:
+      consumes:
+      - application/json
+      description: Record a student's lateness
+      parameters:
+      - description: Late record details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.LateRecord'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Create a Late record
+      tags:
+      - Records
+  /api/v1/pelanggarans:
+    get:
+      description: Retrieves all discipline/violation records
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get all Pelanggaran records
+      tags:
+      - Pelanggaran
+    post:
+      consumes:
+      - application/json
+      description: Record a student's discipline violation
+      parameters:
+      - description: Pelanggaran details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.Pelanggaran'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Create a Pelanggaran record
+      tags:
+      - Pelanggaran
+  /api/v1/schedules:
+    get:
+      description: Retrieves all class schedules
+      parameters:
+      - description: Filter by rombel/class
+        in: query
+        name: rombel
+        type: string
+      - description: Filter by day
+        in: query
+        name: day
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get all Schedules
+      tags:
+      - Schedule
+  /api/v1/students:
+    get:
+      description: Retrieves a list of all students, optionally filtered by name search
+      parameters:
+      - description: Search student by name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get all students
+      tags:
+      - Students
+swagger: "2.0"

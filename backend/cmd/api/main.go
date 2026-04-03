@@ -11,8 +11,16 @@ import (
 	"github.com/upiw256/be-educore/internal/handler"
 	"github.com/upiw256/be-educore/pkg/db"
 	"github.com/upiw256/be-educore/pkg/utils"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	_ "github.com/upiw256/be-educore/docs"
 )
 
+// @title           EduCore API
+// @version         1.0
+// @description     This is the schools management EduCore API.
+// @host            localhost:8082
+// @BasePath        /
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using defaults")
@@ -34,22 +42,39 @@ func main() {
 		utils.JSONResponse(c, http.StatusOK, "API is running", nil)
 	})
 
+	// Swagger documentation handler
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	api := r.Group("/api/v1")
 	{
+		// Auth
 		authHandler := handler.NewAuthHandler()
 		api.POST("/auth/login", authHandler.Login)
 
+		// Students
 		studentHandler := handler.NewStudentHandler()
 		api.GET("/students", studentHandler.GetStudents)
 
+		// Izin & Late
 		recordHandler := handler.NewRecordHandler()
+		api.GET("/izins", recordHandler.GetIzins)
 		api.POST("/izins", recordHandler.CreateIzin)
+		api.GET("/late-records", recordHandler.GetLateRecords)
 		api.POST("/late-records", recordHandler.CreateLateRecord)
+
+		// Pelanggaran
+		pelanggaranHandler := handler.NewPelanggaranHandler()
+		api.GET("/pelanggarans", pelanggaranHandler.GetPelanggarans)
+		api.POST("/pelanggarans", pelanggaranHandler.CreatePelanggaran)
+
+		// Schedule
+		scheduleHandler := handler.NewScheduleHandler()
+		api.GET("/schedules", scheduleHandler.GetSchedules)
 	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8082"
 	}
 
 	log.Printf("Server starting on port %s", port)
