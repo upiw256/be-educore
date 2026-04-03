@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 
-	"github.com/upiw256/be-educore/internal/model"
 	"github.com/upiw256/be-educore/pkg/db"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
