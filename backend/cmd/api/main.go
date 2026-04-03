@@ -8,12 +8,12 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/upiw256/be-educore/internal/handler"
-	"github.com/upiw256/be-educore/pkg/db"
-	"github.com/upiw256/be-educore/pkg/utils"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	_ "github.com/upiw256/be-educore/docs"
+	"github.com/upiw256/be-educore/internal/handler"
+	"github.com/upiw256/be-educore/pkg/db"
+	"github.com/upiw256/be-educore/pkg/utils"
 )
 
 // @title           EduCore API

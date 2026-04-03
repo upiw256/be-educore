@@ -50,6 +50,7 @@ type Schedule struct {
 
 type IzinSiswa struct {
 	ID         primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	StudentID  primitive.ObjectID `json:"student_id" bson:"student_id"`
 	NIS        string             `json:"nis" bson:"nis"`
 	Name       string             `json:"name" bson:"name"`
 	ClassName  string             `json:"className" bson:"className"`

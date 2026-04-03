@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/upiw256/be-educore/internal/model"
 	"github.com/upiw256/be-educore/internal/repo"
+	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -54,6 +55,18 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 	}
 
 	_ = s.userRepo.UpdateLastLogin(ctx, user.ID)
+
+	// Fetch teacher name if applicable
+	if !user.TeacherID.IsZero() {
+		teacherRepo := repo.NewRepo("teachers")
+		res, _ := teacherRepo.FindOne(ctx, bson.M{"_id": user.TeacherID})
+		if res != nil {
+			// Extract Name from bson.M map
+			if name, ok := res["nama"].(string); ok {
+				user.TeacherName = name
+			}
+		}
+	}
 
 	return tokenString, user, nil
 }

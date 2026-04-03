@@ -23,8 +23,8 @@ const ScheduleScreen = () => {
       if (selectedDay) params.day = selectedDay;
       const res = await getSchedules(params);
       setData(res.data.data || []);
-    } catch {
-      Alert.alert('Error', 'Gagal memuat jadwal');
+    } catch (e) {
+      Alert.alert('Error', 'Gagal memuat jadwal: ' + e.message);
     } finally {
       setLoading(false);
     }

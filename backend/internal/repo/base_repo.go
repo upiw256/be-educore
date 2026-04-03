@@ -42,3 +42,17 @@ func (r *GenericRepo) InsertOne(ctx context.Context, doc interface{}) error {
 	_, err := r.collection.InsertOne(ctx, doc)
 	return err
 }
+
+func (r *GenericRepo) Aggregate(ctx context.Context, pipeline []bson.M) ([]bson.M, error) {
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M
+	if err = cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}

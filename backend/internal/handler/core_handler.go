@@ -69,7 +69,44 @@ func NewRecordHandler() *RecordHandler {
 // @Failure 500 {object} utils.APIResponse
 // @Router /api/v1/izins [get]
 func (h *RecordHandler) GetIzins(c *gin.Context) {
-	results, err := h.izinRepo.FindAll(context.Background(), bson.M{})
+	filter := bson.M{}
+	if nis := c.Query("nis"); nis != "" {
+		filter["nis"] = nis
+	}
+
+	pipeline := []bson.M{
+		{"$match": filter},
+		{"$lookup": bson.M{
+			"from":         "students",
+			"localField":   "student_id",
+			"foreignField": "_id",
+			"as":           "student_info",
+		}},
+		{"$unwind": bson.M{"path": "$student_info", "preserveNullAndEmptyArrays": true}},
+		// Fallback for legacy records without student_id
+		{"$lookup": bson.M{
+			"from":         "students",
+			"localField":   "nis",
+			"foreignField": "nipd",
+			"as":           "legacy_student_info",
+		}},
+		{"$unwind": bson.M{"path": "$legacy_student_info", "preserveNullAndEmptyArrays": true}},
+		{"$addFields": bson.M{
+			"student_id": bson.M{"$ifNull": []interface{}{"$student_id", "$legacy_student_info._id"}},
+			"name": bson.M{"$cond": bson.M{
+				"if":   bson.M{"$gt": []interface{}{bson.M{"$strLenCP": bson.M{"$ifNull": []interface{}{"$student_info.nama", ""}}}, 0}},
+				"then": "$student_info.nama",
+				"else": bson.M{"$ifNull": []interface{}{"$legacy_student_info.nama", "$name"}},
+			}},
+			"className": bson.M{"$cond": bson.M{
+				"if":   bson.M{"$gt": []interface{}{bson.M{"$strLenCP": bson.M{"$ifNull": []interface{}{"$student_info.nama_rombel", ""}}}, 0}},
+				"then": "$student_info.nama_rombel",
+				"else": bson.M{"$ifNull": []interface{}{"$legacy_student_info.nama_rombel", "$className"}},
+			}},
+		}},
+	}
+
+	results, err := h.izinRepo.Aggregate(context.Background(), pipeline)
 	if err != nil {
 		utils.JSONResponse(c, http.StatusInternalServerError, "Failed to get izin records", nil)
 		return
@@ -77,17 +114,6 @@ func (h *RecordHandler) GetIzins(c *gin.Context) {
 	utils.JSONResponse(c, http.StatusOK, "Success", results)
 }
 
-// CreateIzin godoc
-// @Summary Create an Izin record
-// @Description Record a student's excuse (Izin)
-// @Tags Records
-// @Accept json
-// @Produce json
-// @Param request body model.IzinSiswa true "Izin details"
-// @Success 201 {object} utils.APIResponse
-// @Failure 400 {object} utils.APIResponse
-// @Failure 500 {object} utils.APIResponse
-// @Router /api/v1/izins [post]
 func (h *RecordHandler) CreateIzin(c *gin.Context) {
 	var izin model.IzinSiswa
 	if err := c.ShouldBindJSON(&izin); err != nil {
@@ -104,16 +130,45 @@ func (h *RecordHandler) CreateIzin(c *gin.Context) {
 	utils.JSONResponse(c, http.StatusCreated, "Izin created successfully", izin)
 }
 
-// GetLateRecords godoc
-// @Summary Get all Late records
-// @Description Retrieves all student tardiness records
-// @Tags Records
-// @Produce json
-// @Success 200 {object} utils.APIResponse
-// @Failure 500 {object} utils.APIResponse
-// @Router /api/v1/late-records [get]
 func (h *RecordHandler) GetLateRecords(c *gin.Context) {
-	results, err := h.lateRepo.FindAll(context.Background(), bson.M{})
+	filter := bson.M{}
+	if nipd := c.Query("nipd"); nipd != "" {
+		filter["nipd"] = nipd
+	}
+
+	pipeline := []bson.M{
+		{"$match": filter},
+		{"$lookup": bson.M{
+			"from":         "students",
+			"localField":   "student_id",
+			"foreignField": "_id",
+			"as":           "student_info",
+		}},
+		{"$unwind": bson.M{"path": "$student_info", "preserveNullAndEmptyArrays": true}},
+		// Fallback for legacy records without student_id
+		{"$lookup": bson.M{
+			"from":         "students",
+			"localField":   "nipd",
+			"foreignField": "nipd",
+			"as":           "legacy_student_info",
+		}},
+		{"$unwind": bson.M{"path": "$legacy_student_info", "preserveNullAndEmptyArrays": true}},
+		{"$addFields": bson.M{
+			"student_id": bson.M{"$ifNull": []interface{}{"$student_id", "$legacy_student_info._id"}},
+			"name": bson.M{"$cond": bson.M{
+				"if":   bson.M{"$gt": []interface{}{bson.M{"$strLenCP": bson.M{"$ifNull": []interface{}{"$student_info.nama", ""}}}, 0}},
+				"then": "$student_info.nama",
+				"else": bson.M{"$ifNull": []interface{}{"$legacy_student_info.nama", "$name"}},
+			}},
+			"className": bson.M{"$cond": bson.M{
+				"if":   bson.M{"$gt": []interface{}{bson.M{"$strLenCP": bson.M{"$ifNull": []interface{}{"$student_info.nama_rombel", ""}}}, 0}},
+				"then": "$student_info.nama_rombel",
+				"else": bson.M{"$ifNull": []interface{}{"$legacy_student_info.nama_rombel", "$className"}},
+			}},
+		}},
+	}
+
+	results, err := h.lateRepo.Aggregate(context.Background(), pipeline)
 	if err != nil {
 		utils.JSONResponse(c, http.StatusInternalServerError, "Failed to get late records", nil)
 		return

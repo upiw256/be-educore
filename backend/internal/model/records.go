@@ -10,6 +10,8 @@ type LateRecord struct {
 	ID           primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	StudentID    primitive.ObjectID `json:"student_id" bson:"student_id"`
 	NIPD         string             `json:"nipd" bson:"nipd"`
+	Name         string             `json:"name" bson:"name"`
+	ClassName    string             `json:"className" bson:"className"`
 	ArrivalTime  time.Time          `json:"arrival_time" bson:"arrival_time"`
 	Reason       string             `json:"reason" bson:"reason"`
 	AcademicYear string             `json:"academic_year" bson:"academic_year"`

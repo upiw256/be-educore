@@ -21,8 +21,8 @@ const PelanggaranScreen = () => {
       setLoading(true);
       const res = await getPelanggarans();
       setData(res.data.data || []);
-    } catch {
-      Alert.alert('Error', 'Gagal memuat data pelanggaran');
+    } catch (e) {
+      Alert.alert('Error', 'Gagal memuat data pelanggaran: ' + e.message);
     } finally {
       setLoading(false);
     }
@@ -41,8 +41,8 @@ const PelanggaranScreen = () => {
       setModalVisible(false);
       setForm({ nis: '', type: 'Ringan', description: '', poin: '5' });
       fetchData();
-    } catch {
-      Alert.alert('Error', 'Gagal menyimpan pelanggaran');
+    } catch (e) {
+      Alert.alert('Error', 'Gagal menyimpan pelanggaran: ' + e.message);
     } finally {
       setSubmitting(false);
     }

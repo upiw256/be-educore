@@ -6,14 +6,46 @@ const BASE_URL = 'http://192.168.18.22:8082/api/v1';
 
 const api = axios.create({
   baseURL: BASE_URL,
+  timeout: 8000,
   headers: { 'Content-Type': 'application/json' },
 });
 
-api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('userToken');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+api.interceptors.request.use(
+  async (config) => {
+    console.log('[API Request]', config.method?.toUpperCase(), config.url);
+    try {
+      // Set a short timeout for SecureStore just in case
+      const tokenPromise = SecureStore.getItemAsync('userToken');
+      const token = await Promise.race([
+        tokenPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('SecureStore Timeout')), 2000))
+      ]);
+      
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (e) {
+      console.warn('[API Interceptor] SecureStore error:', e.message);
+    }
+    return config;
+  },
+  (error) => {
+    console.error('[API Request Error]', error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for debugging
+api.interceptors.response.use(
+  (response) => {
+    console.log('[API Response]', response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    console.error('[API Response Error]', error.config?.url, error.message);
+    return Promise.reject(error);
+  }
+);
 
 // ── Students ──────────────────────────────────────────────
 export const getStudents = (search = '') =>
