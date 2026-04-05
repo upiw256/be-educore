@@ -10,6 +10,7 @@ import IzinScreen from '../screens/IzinScreen';
 import LateScreen from '../screens/LateScreen';
 import PelanggaranScreen from '../screens/PelanggaranScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
+import StudentScreen from '../screens/StudentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -70,6 +71,11 @@ const AppNavigator = () => {
               name="Schedule"
               component={ScheduleScreen}
               options={{ title: 'Jadwal Pelajaran', headerStyle: { ...HEADER_STYLE, backgroundColor: '#1A237E' }, headerTitleStyle: HEADER_TITLE_STYLE, headerTintColor: '#fff' }}
+            />
+            <Stack.Screen
+              name="Students"
+              component={StudentScreen}
+              options={{ title: 'Data Siswa', headerStyle: { ...HEADER_STYLE, backgroundColor: '#00695C' }, headerTitleStyle: HEADER_TITLE_STYLE, headerTintColor: '#fff' }}
             />
           </>
         )}

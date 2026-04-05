@@ -222,7 +222,43 @@ func NewPelanggaranHandler() *PelanggaranHandler {
 // @Failure 500 {object} utils.APIResponse
 // @Router /api/v1/pelanggarans [get]
 func (h *PelanggaranHandler) GetPelanggarans(c *gin.Context) {
-	results, err := h.repo.FindAll(context.Background(), bson.M{})
+	filter := bson.M{}
+	if nis := c.Query("nis"); nis != "" {
+		filter["nis"] = nis
+	}
+
+	pipeline := []bson.M{
+		{"$match": filter},
+		{"$lookup": bson.M{
+			"from":         "students",
+			"localField":   "student_id",
+			"foreignField": "_id",
+			"as":           "student_info",
+		}},
+		{"$unwind": bson.M{"path": "$student_info", "preserveNullAndEmptyArrays": true}},
+		{"$lookup": bson.M{
+			"from":         "students",
+			"localField":   "nis",
+			"foreignField": "nipd",
+			"as":           "legacy_student_info",
+		}},
+		{"$unwind": bson.M{"path": "$legacy_student_info", "preserveNullAndEmptyArrays": true}},
+		{"$addFields": bson.M{
+			"student_id": bson.M{"$ifNull": []interface{}{"$student_id", "$legacy_student_info._id"}},
+			"name": bson.M{"$cond": bson.M{
+				"if":   bson.M{"$gt": []interface{}{bson.M{"$strLenCP": bson.M{"$ifNull": []interface{}{"$student_info.nama", ""}}}, 0}},
+				"then": "$student_info.nama",
+				"else": bson.M{"$ifNull": []interface{}{"$legacy_student_info.nama", "$name"}},
+			}},
+			"className": bson.M{"$cond": bson.M{
+				"if":   bson.M{"$gt": []interface{}{bson.M{"$strLenCP": bson.M{"$ifNull": []interface{}{"$student_info.nama_rombel", ""}}}, 0}},
+				"then": "$student_info.nama_rombel",
+				"else": bson.M{"$ifNull": []interface{}{"$legacy_student_info.nama_rombel", "$className"}},
+			}},
+		}},
+	}
+
+	results, err := h.repo.Aggregate(context.Background(), pipeline)
 	if err != nil {
 		utils.JSONResponse(c, http.StatusInternalServerError, "Failed to get pelanggaran records", nil)
 		return
@@ -289,6 +325,35 @@ func (h *ScheduleHandler) GetSchedules(c *gin.Context) {
 	results, err := h.repo.FindAll(context.Background(), filter)
 	if err != nil {
 		utils.JSONResponse(c, http.StatusInternalServerError, "Failed to get schedules", nil)
+		return
+	}
+	utils.JSONResponse(c, http.StatusOK, "Success", results)
+}
+
+// ─── Pengumuman ──────────────────────────────────────────────────────────────
+
+type PengumumanHandler struct {
+	repo *repo.GenericRepo
+}
+
+func NewPengumumanHandler() *PengumumanHandler {
+	return &PengumumanHandler{repo: repo.NewRepo("pengumumen")}
+}
+
+// GetPengumuman godoc
+// @Summary Get all Pengumuman
+// @Description Retrieves all news and announcements
+// @Tags Pengumuman
+// @Produce json
+// @Success 200 {object} utils.APIResponse
+// @Failure 500 {object} utils.APIResponse
+// @Router /api/v1/pengumuman [get]
+func (h *PengumumanHandler) GetPengumuman(c *gin.Context) {
+	// Let's sort it by descending date (assuming they have date/createdAt) or just fetch all
+	// To keep it simple, fetch all with empty filter
+	results, err := h.repo.FindAll(context.Background(), bson.M{})
+	if err != nil {
+		utils.JSONResponse(c, http.StatusInternalServerError, "Failed to get pengumuman", nil)
 		return
 	}
 	utils.JSONResponse(c, http.StatusOK, "Success", results)

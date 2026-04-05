@@ -50,6 +50,7 @@ func main() {
 		// Auth
 		authHandler := handler.NewAuthHandler()
 		api.POST("/auth/login", authHandler.Login)
+		api.POST("/auth/change-password", authHandler.ChangePassword)
 
 		// Students
 		studentHandler := handler.NewStudentHandler()
@@ -70,6 +71,10 @@ func main() {
 		// Schedule
 		scheduleHandler := handler.NewScheduleHandler()
 		api.GET("/schedules", scheduleHandler.GetSchedules)
+
+		// Pengumuman
+		pengumumanHandler := handler.NewPengumumanHandler()
+		api.GET("/pengumuman", pengumumanHandler.GetPengumuman)
 	}
 
 	port := os.Getenv("PORT")

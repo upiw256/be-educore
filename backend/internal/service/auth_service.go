@@ -70,3 +70,22 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 
 	return tokenString, user, nil
 }
+
+func (s *AuthService) ChangePassword(ctx context.Context, username, oldPassword, newPassword string) error {
+	user, err := s.userRepo.FindByUsername(ctx, username)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword))
+	if err != nil && user.Password != oldPassword {
+		return errors.New("invalid old password")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	return s.userRepo.UpdatePassword(ctx, user.ID, string(hashedPassword))
+}

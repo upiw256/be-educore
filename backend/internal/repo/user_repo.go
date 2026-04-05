@@ -33,3 +33,8 @@ func (r *UserRepo) UpdateLastLogin(ctx context.Context, id interface{}) error {
 	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"updatedAt": time.Now()}})
 	return err
 }
+
+func (r *UserRepo) UpdatePassword(ctx context.Context, id interface{}, password string) error {
+	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"password": password}})
+	return err
+}

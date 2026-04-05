@@ -66,4 +66,6 @@ export const createPelanggaran = (data) => api.post('/pelanggarans', data);
 // ── Schedule ──────────────────────────────────────────────
 export const getSchedules = (params = {}) => api.get('/schedules', { params });
 
+export const getPengumuman = () => api.get('/pengumuman');
+
 export default api;
