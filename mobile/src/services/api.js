@@ -1,8 +1,8 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-// NOTE: Replace with your actual local machine IP address
-const BASE_URL = 'http://192.168.18.22:8082/api/v1';
+// Set your environment variable EXPO_PUBLIC_API_URL in the .env file
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.5.54:8082/api/v1';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -20,7 +20,7 @@ api.interceptors.request.use(
         tokenPromise,
         new Promise((_, reject) => setTimeout(() => reject(new Error('SecureStore Timeout')), 2000))
       ]);
-      
+
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
