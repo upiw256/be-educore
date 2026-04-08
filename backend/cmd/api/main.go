@@ -71,6 +71,7 @@ func main() {
 		// Schedule
 		scheduleHandler := handler.NewScheduleHandler()
 		api.GET("/schedules", scheduleHandler.GetSchedules)
+		api.GET("/schedules/classes", scheduleHandler.GetClasses)
 
 		// Pengumuman
 		pengumumanHandler := handler.NewPengumumanHandler()

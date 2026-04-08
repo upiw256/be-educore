@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, ActivityIndicator, Modal, TextInput, Alert } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import { getIzins, getLateRecords, getPelanggarans, getPengumuman } from '../services/api';
+import { getIzins, getLateRecords, getPelanggarans, getPengumuman, checkServerHealth, changePassword } from '../services/api';
 
 const MENU_ITEMS = [
   { id: 'students',   title: 'Data Siswa',        icon: '🎓', screen: 'Students',   color: '#00695C', light: '#E0F2F1' },
@@ -40,20 +40,13 @@ const DashboardScreen = ({ navigation }) => {
     }
     setChangingPass(true);
     try {
-      // NOTE: This assumes the backend endpoint is implemented
-      const res = await fetch('http://192.168.18.22:8082/api/v1/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: userInfo?.username,
-          old_password: oldPassword,
-          new_password: newPassword,
-        }),
+      const response = await changePassword({
+        username: userInfo?.username,
+        old_password: oldPassword,
+        new_password: newPassword,
       });
-      const data = await res.json();
-      if (res.status === 200) {
+
+      if (response.status === 200) {
         Alert.alert('Sukses', 'Password berhasil diubah!');
         setOldPassword('');
         setNewPassword('');
@@ -61,10 +54,11 @@ const DashboardScreen = ({ navigation }) => {
         setShowPassword(false);
         setPassModalVisible(false);
       } else {
-        Alert.alert('Gagal', data.message || 'Gagal mengubah password');
+        Alert.alert('Gagal', response.data?.message || 'Gagal mengubah password');
       }
     } catch (e) {
-      Alert.alert('Error', 'Terjadi kesalahan jaringan');
+      const msg = e.response?.data?.message || 'Terjadi kesalahan jaringan';
+      Alert.alert('Error', msg);
     } finally {
       setChangingPass(false);
     }
@@ -74,8 +68,7 @@ const DashboardScreen = ({ navigation }) => {
     let interval;
     const checkDb = async () => {
       try {
-        const timestamp = new Date().getTime();
-        const response = await fetch(`http://103.229.14.226:30000/api?t=${timestamp}`);
+        const response = await checkServerHealth();
         if (response.status === 200) {
           setDbStatus('Connected');
         } else {

@@ -65,7 +65,21 @@ export const createPelanggaran = (data) => api.post('/pelanggarans', data);
 
 // ── Schedule ──────────────────────────────────────────────
 export const getSchedules = (params = {}) => api.get('/schedules', { params });
+export const getScheduleClasses = () => api.get('/schedules/classes');
+export const getScheduleDirect = (kelas) => {
+  const url = `${process.env.EXPO_PUBLIC_SCHEDULE_API_URL}/${kelas}`;
+  return axios.get(url, { timeout: 10000 });
+};
 
 export const getPengumuman = () => api.get('/pengumuman');
+
+// ── Auth & Health ──────────────────────────────────────────
+export const checkServerHealth = async () => {
+  // Pinging the root /health endpoint instead of the /api/v1 subgroup
+  const rootUrl = BASE_URL.replace('/api/v1', '/health');
+  return axios.get(rootUrl, { timeout: 3000 });
+};
+
+export const changePassword = (data) => api.post('/auth/change-password', data);
 
 export default api;

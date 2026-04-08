@@ -2,7 +2,12 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -297,37 +302,147 @@ func (h *PelanggaranHandler) CreatePelanggaran(c *gin.Context) {
 // ─── Schedule ────────────────────────────────────────────────────────────────
 
 type ScheduleHandler struct {
-	repo *repo.GenericRepo
+	repo        *repo.GenericRepo
+	studentRepo *repo.StudentRepo
 }
 
 func NewScheduleHandler() *ScheduleHandler {
-	return &ScheduleHandler{repo: repo.NewRepo("schedules")}
+	return &ScheduleHandler{
+		repo:        repo.NewRepo("schedules"),
+		studentRepo: repo.NewStudentRepo(),
+	}
+}
+
+type ExternalScheduleResponse struct {
+	Kelas       string `json:"kelas"`
+	DataPerHari map[string][]struct {
+		JamKe    int    `json:"jam_ke"`
+		Waktu    string `json:"waktu"`
+		Kegiatan []struct {
+			Guru  string `json:"guru"`
+			Mapel string `json:"mapel"`
+		} `json:"kegiatan"`
+	} `json:"data_per_hari"`
 }
 
 // GetSchedules godoc
 // @Summary Get all Schedules
-// @Description Retrieves all class schedules
+// @Description Retrieves all class schedules from external API automated by student rombels
 // @Tags Schedule
 // @Produce json
 // @Param rombel query string false "Filter by rombel/class"
-// @Param day    query string false "Filter by day"
+// @Param day    query string false "Filter by day (SENIN, SELASA, etc)"
 // @Success 200 {object} utils.APIResponse
 // @Failure 500 {object} utils.APIResponse
 // @Router /api/v1/schedules [get]
 func (h *ScheduleHandler) GetSchedules(c *gin.Context) {
-	filter := bson.M{}
-	if rombel := c.Query("rombel"); rombel != "" {
-		filter["rombel"] = rombel
-	}
-	if day := c.Query("day"); day != "" {
-		filter["day"] = day
-	}
-	results, err := h.repo.FindAll(context.Background(), filter)
-	if err != nil {
-		utils.JSONResponse(c, http.StatusInternalServerError, "Failed to get schedules", nil)
+	rombelFilter := c.Query("rombel")
+	dayFilter := strings.ToUpper(c.Query("day"))
+	externalAPI := os.Getenv("SCHEDULE_EXTERNAL_API")
+
+	if externalAPI == "" {
+		// Fallback to internal MongoDB if external API is not configured
+		filter := bson.M{}
+		if rombelFilter != "" {
+			filter["rombel"] = rombelFilter
+		}
+		if dayFilter != "" {
+			filter["day"] = dayFilter
+		}
+		results, err := h.repo.FindAll(context.Background(), filter)
+		if err != nil {
+			utils.JSONResponse(c, http.StatusInternalServerError, "Failed to get schedules from DB", nil)
+			return
+		}
+		utils.JSONResponse(c, http.StatusOK, "Success (from DB)", results)
 		return
 	}
-	utils.JSONResponse(c, http.StatusOK, "Success", results)
+
+	var rombels []string
+	if rombelFilter != "" {
+		rombels = []string{rombelFilter}
+	} else {
+		var err error
+		rombels, err = h.studentRepo.GetDistinctRombels(context.Background())
+		if err != nil {
+			utils.JSONResponse(c, http.StatusInternalServerError, "Failed to resolve rombels", nil)
+			return
+		}
+	}
+
+	// Fetch concurrently
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	allSchedules := []model.Schedule{}
+
+	for _, rName := range rombels {
+		wg.Add(1)
+		go func(rombelName string) {
+			defer wg.Done()
+			url := fmt.Sprintf("%s/%s", strings.TrimRight(externalAPI, "/"), rombelName)
+			resp, err := http.Get(url)
+			if err != nil {
+				return
+			}
+			defer resp.Body.Close()
+
+			var extResp ExternalScheduleResponse
+			if err := json.NewDecoder(resp.Body).Decode(&extResp); err != nil {
+				return
+			}
+
+			// Map to model.Schedule
+			tempSchedules := []model.Schedule{}
+			for day, list := range extResp.DataPerHari {
+				if dayFilter != "" && strings.ToUpper(day) != dayFilter {
+					continue
+				}
+				for _, item := range list {
+					subj := "-"
+					teacher := "-"
+					if len(item.Kegiatan) > 0 {
+						subj = item.Kegiatan[0].Mapel
+						teacher = item.Kegiatan[0].Guru
+					}
+					s := model.Schedule{
+						ID:          primitive.NewObjectID(),
+						Day:         day,
+						Period:      item.JamKe,
+						TimeRange:   item.Waktu,
+						Rombel:      extResp.Kelas,
+						TeacherName: teacher,
+						Subject:     subj,
+						UpdatedAt:   time.Now(),
+					}
+					tempSchedules = append(tempSchedules, s)
+				}
+			}
+
+			mu.Lock()
+			allSchedules = append(allSchedules, tempSchedules...)
+			mu.Unlock()
+		}(rName)
+	}
+	wg.Wait()
+
+	utils.JSONResponse(c, http.StatusOK, "Success", allSchedules)
+}
+
+// GetClasses godoc
+// @Summary Get unique class names
+// @Description Retrieves all unique rombels for schedule selection
+// @Tags Schedule
+// @Produce json
+// @Success 200 {object} utils.APIResponse
+// @Failure 500 {object} utils.APIResponse
+// @Router /api/v1/schedules/classes [get]
+func (h *ScheduleHandler) GetClasses(c *gin.Context) {
+	rombels, err := h.studentRepo.GetDistinctRombels(context.Background())
+	if err != nil {
+		utils.JSONResponse(c, http.StatusInternalServerError, "Failed to resolve classes", nil)
+		return
+	}
+	utils.JSONResponse(c, http.StatusOK, "Success", rombels)
 }
 
 // ─── Pengumuman ──────────────────────────────────────────────────────────────

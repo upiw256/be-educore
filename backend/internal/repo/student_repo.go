@@ -41,3 +41,14 @@ func (r *StudentRepo) FindByNIPD(ctx context.Context, nipd string) (*model.Stude
 	}
 	return &student, nil
 }
+func (r *StudentRepo) GetDistinctRombels(ctx context.Context) ([]string, error) {
+	results, err := r.collection.Distinct(ctx, "nama_rombel", bson.M{"is_active": true})
+	if err != nil {
+		return nil, err
+	}
+	rombels := make([]string, len(results))
+	for i, v := range results {
+		rombels[i] = v.(string)
+	}
+	return rombels, nil
+}
